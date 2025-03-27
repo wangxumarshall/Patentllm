@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>分析中 - 华为专利线索分析系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .analyzing-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 40px;
+            width: 500px;
+            text-align: center;
+        }
+        .logo {
+            width: 120px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #1a237e;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+        .progress-container {
+            margin: 30px 0;
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background: #3f51b5;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .progress-text {
+            margin-top: 10px;
+            color: #6b7280;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3f51b5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="analyzing-container">
+        <img src="https://www.huawei.com/favicon.ico" alt="华为Logo" class="logo">
+        <h1>正在分析专利内容</h1>
+
+        <div class="spinner"></div>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">初始化分析引擎...</div>
+        </div>
+    </div>
+
+    <script>
+        const stages = [
+            { percent: 15, text: "正在解析文档..." },
+            { percent: 30, text: "提取技术特征..." },
+            { percent: 50, text: "搜索侵权线索..." },
+            { percent: 75, text: "验证专利有效性..." },
+            { percent: 90, text: "生成报告..." },
+            { percent: 100, text: "分析完成! 正在下载报告" }
+        ];
+
+        let currentStage = 0;
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        function updateProgress() {
+            if (currentStage < stages.length) {
+                progressBar.style.width = stages[currentStage].percent + '%';
+                progressText.textContent = stages[currentStage].text;
+                currentStage++;
+                setTimeout(updateProgress, 1000 + Math.random() * 1000);
+            } else {
+                // 开始实际分析
+                startAnalysis();
+            }
+        }
+
+        function startAnalysis() {
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    progressText.textContent = '分析失败: ' + data.error;
+                } else {
+                    window.location.href = '/report';
+                }
+            })
+            .catch(error => {
+                progressText.textContent = '请求失败: ' + error.message;
+            });
+        }
+
+        // 开始进度更新
+        setTimeout(updateProgress, 500);
+    </script>
+</body>
+</html>

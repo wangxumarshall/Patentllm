@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>华为专利线索分析报告 - 华为专利线索分析系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.1.0/github-markdown.min.css">
+    <style>
+        :root {
+            --content-padding: 60px;
+            --section-indent: 30px;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            height: 40px;
+            vertical-align: middle;
+            margin-right: 15px;
+        }
+
+        .header h1 {
+            display: inline-block;
+            margin: 0;
+            font-weight: 400;
+            vertical-align: middle;
+            font-size: 24px;
+        }
+
+        .main-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 var(--content-padding);
+        }
+
+        .report-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .report-header {
+            background: linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%);
+            color: white;
+            padding: 25px var(--content-padding);
+        }
+
+        .report-title {
+            margin: 0;
+            font-weight: 500;
+            font-size: 22px;
+        }
+
+        .report-meta {
+            display: flex;
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .report-meta div {
+            margin-right: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        .report-content {
+            padding: 35px var(--content-padding);
+        }
+
+        .markdown-body {
+            background: transparent;
+            font-size: 15px;
+            color: #444;
+            font-family: 'Noto Sans SC', sans-serif;
+            padding-left: 0;
+            margin-left: 20px;
+        }
+
+        /* 标题样式 */
+        .markdown-body h1 {
+            margin: 1.5em 0 1em 0;
+            border-bottom: 2px solid #3f51b5;
+            padding-bottom: 0.3em;
+            color: #1a237e;
+            font-weight: 500;
+        }
+
+        .markdown-body h2 {
+            margin: 1.3em 0 0.8em 0;
+            color: #1a237e;
+            font-weight: 500;
+        }
+
+        .markdown-body h3 {
+            margin: 1.1em 0 0.6em 0;
+            color: #303f9f;
+            font-weight: 500;
+        }
+
+        /* 段落样式 */
+        .markdown-body p {
+            margin: 0.8em 0;
+            line-height: 1.7;
+        }
+
+        /* 列表样式 */
+        .markdown-body ul,
+        .markdown-body ol {
+            margin: 0.8em 0 0.8em 1.5em;
+            padding-left: 0;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.5em;
+            line-height: 1.6;
+            padding-left: 0;
+            position: relative;
+            list-style-type: none;
+        }
+
+        /* 特征列表特殊样式 */
+        .feature-section {
+            margin-left: 20px;
+        }
+
+        .feature-section li {
+            margin-bottom: 0.8em;
+            padding-left: 0;
+            text-indent: 0;
+        }
+
+        /* 表格样式 */
+        .markdown-body table {
+            margin: 1.5em 0;
+            border-collapse: collapse;
+            width: 100%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+
+        .markdown-body table th {
+            background: linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%);
+            color: white;
+            font-weight: 500;
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .markdown-body table td {
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+
+        .markdown-body table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        /* 链接样式 */
+        .markdown-body a {
+            color: #1a73e8;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .markdown-body a:hover {
+            color: #0d47a1;
+            text-decoration: underline;
+        }
+
+        /* 返回按钮样式 */
+        .back-btn {
+            display: block;
+            text-align: center;
+            margin: 40px auto;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            width: 200px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(63,81,181,0.3);
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, #303f9f 0%, #3949ab 100%);
+            box-shadow: 0 4px 8px rgba(63,81,181,0.4);
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        /* 新增的联系信息样式 */
+        .contact-info {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3f51b5;
+        }
+
+        .contact-info p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            :root {
+                --content-padding: 30px;
+            }
+
+            .markdown-body {
+                margin-left: 10px;
+                font-size: 14px;
+            }
+
+            .feature-section {
+                margin-left: 10px;
+            }
+
+            .contact-info {
+                margin-top: 30px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="https://www.huawei.com/favicon.ico" alt="华为Logo" class="logo">
+        <h1>华为专利线索分析系统</h1>
+    </div>
+
+    <div class="main-container">
+        <div class="report-container">
+            <div class="report-header">
+                <h2 class="report-title">华为专利线索分析报告</h2>
+                <div class="report-meta">
+                    <div><i>📄</i> 报告ID: {{ report_id }}</div>
+                    <div><i>🕒</i> 生成时间: {{ report_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+            </div>
+
+
+            <div class="report-content markdown-body">
+                <!-- 使用JavaScript处理内容格式 -->
+                <div id="report-content">
+                    {{ result|safe }}
+                </div>
+
+
+            </div>
+                                        <!-- 新增的联系信息部分 -->
+            <div class="contact-info">
+                <p>您如果觉得模型输出的效果不好,存在信息缺失等问题,或者您有更好的建议,请联系: 汪旭 00473197</p>
+            </div>
+        </div>
+
+        <a href="/upload" class="back-btn">返回首页</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const reportContent = document.getElementById('report-content');
+
+            // 移除多余的黑点符号
+            const bullets = ['•', '·', '◦'];
+            bullets.forEach(bullet => {
+                reportContent.innerHTML = reportContent.innerHTML.replace(new RegExp(bullet, 'g'), '');
+            });
+
+            // 清理多余的空格和空行
+            reportContent.innerHTML = reportContent.innerHTML.replace(/\s{2,}/g, ' ');
+
+            // 修复列表格式
+            document.querySelectorAll('li').forEach(li => {
+                if (li.textContent.startsWith('.')) {
+                    li.textContent = li.textContent.substring(1).trim();
+                }
+            });
+
+            // 移除空段落
+            document.querySelectorAll('p').forEach(p => {
+                if (p.textContent.trim() === '') {
+                    p.remove();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
