@@ -1,0 +1,14 @@
+evaluation_criteria:
+  - name: "技术特征匹配度"
+    description: "对比侵权线索与目标专利的技术特征，要求核心权利要求覆盖度≥70%"
+    weight: 0.4
+    threshold: 0.7
+  - name: "现有技术公开时间"
+    description: "侵权线索涉及的专利/技术公开时间不得早于目标专利申请日"
+    weight: 0.3
+  - name: "地域有效性"
+    description: "侵权行为发生地需在目标专利保护地域范围内（如中国专利需在中国境内实施）"
+    weight: 0.2
+  - name: "权利要求等同原则"
+    description: "技术特征以基本相同的手段、实现相同功能、达到相同效果，视为等同侵权"
+    weight: 0.1    
