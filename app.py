@@ -6,7 +6,7 @@ import random
 import requests
 from agents.patent_analyzer import PatentAnalyzer
 from config.settings import UPLOAD_FOLDER, MAX_CONTENT_LENGTH, SECRET_KEY
-from prompts.prompt_templates import RESEARCH_PROMPT, EVALUATION_PROMPT, SUMMARY_PROMPT
+from prompts.prompt_templates import get_customized_prompt
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -86,9 +86,20 @@ def analyze():
         if not patent_text:
             return jsonify(error="无法提取有效文本内容")
 
+        # 获取自定义的 prompt
+        company_name = request.form.get('company_name', '全球知名ICT')
+        research_prompt = get_customized_prompt('research', =company_name)
+        summary_prompt = get_customized_prompt('summary', company_name=company_name)
+        
+        # 可以添加更多自定义参数
+        if 'focus_area' in request.form:
+            additional_instructions = f"特别关注 {request.form['focus_area']} 领域的侵权线索"
+            research_prompt = get_customized_prompt('research', 
+                                                  company_name=company_name,
+                                                  additional_instructions=additional_instructions)
+
         analyzer = PatentAnalyzer()
-        # 使用新的 prompt 变量
-        result = analyzer.analyze_patent(patent_text, RESEARCH_PROMPT, SUMMARY_PROMPT)
+        result = analyzer.analyze_patent(patent_text, research_prompt, summary_prompt)
         session['analysis_result'] = result
         return jsonify(result=result)
 

@@ -161,6 +161,11 @@ def get_customized_prompt(prompt_type, **kwargs):
     Args:
         prompt_type: 提示词类型 ('research', 'evaluation', 'summary')
         **kwargs: 可选参数，用于自定义提示词
+            - company_name: 公司名称，替换默认的"X公司"
+            - additional_instructions: 额外说明
+            - patent_info: 专利信息字典，包含专利号、申请日期等
+            - focus_area: 重点关注的技术领域
+            - risk_threshold: 风险阈值，默认为70
         
     Returns:
         str: 定制后的提示词
@@ -176,10 +181,35 @@ def get_customized_prompt(prompt_type, **kwargs):
     
     prompt = base_prompts[prompt_type]
     
-    # 根据参数自定义提示词
+    # 替换公司名称
     if kwargs.get('company_name'):
         prompt = prompt.replace('X公司', kwargs['company_name'])
     
+    # 添加专利信息
+    if kwargs.get('patent_info') and prompt_type in ['evaluation', 'summary']:
+        patent_info = kwargs['patent_info']
+        patent_info_text = "\n专利信息："
+        
+        if patent_info.get('patent_number'):
+            patent_info_text += f"\n- 专利号: {patent_info['patent_number']}"
+        
+        if patent_info.get('filing_date'):
+            patent_info_text += f"\n- 申请日期: {patent_info['filing_date']}"
+            
+        prompt += patent_info_text
+    
+    # 添加重点关注领域
+    if kwargs.get('focus_area') and prompt_type == 'research':
+        focus_area = kwargs['focus_area']
+        prompt += f"\n\n请特别关注以下技术领域的侵权线索：{focus_area}"
+    
+    # 调整风险阈值
+    if kwargs.get('risk_threshold') and prompt_type == 'evaluation':
+        risk_threshold = kwargs['risk_threshold']
+        # 替换默认的风险阈值（70分）
+        prompt = prompt.replace('≥70分为高风险', f'≥{risk_threshold}分为高风险')
+    
+    # 添加额外说明
     if kwargs.get('additional_instructions'):
         prompt += f"\n\n额外说明：\n{kwargs['additional_instructions']}"
     

@@ -3,6 +3,7 @@
 <head>
     <title>华为专利线索分析系统 - 上传</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <!-- 在现有 style 标签内添加 -->
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -115,6 +116,18 @@
             <div class="or-divider">或</div>
 
             <input type="text" class="url-input" name="url" placeholder="输入专利网页URL (例如: https://example.com/patent)">
+            
+            <!-- 新增公司名称输入 -->
+            <div class="company-input-container">
+                <label for="companyName">公司名称:</label>
+                <input type="text" id="companyName" name="company_name" placeholder="默认为全球知名ICT公司" class="company-input">
+            </div>
+            
+            <!-- 新增技术领域关注点 -->
+            <div class="focus-area-container">
+                <label for="focusArea">重点关注领域:</label>
+                <input type="text" id="focusArea" name="focus_area" placeholder="例如: 5G、人工智能、云计算" class="focus-area-input">
+            </div>
 
             <button type="submit" class="analyze-btn">开始分析</button>
         </form>

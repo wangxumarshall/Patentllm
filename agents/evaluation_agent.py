@@ -5,7 +5,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import re
-from prompts.prompt_templates import EVALUATION_PROMPT
+from prompts.prompt_templates import get_customized_prompt
 
 
 class EvaluationAgent:
@@ -45,11 +45,13 @@ class EvaluationAgent:
 待评估侵权线索：
 {chr(10).join(clues)}"""
 
-    def conduct_evaluation(self, research_materials):
+    def conduct_evaluation(self, research_materials, evaluation_prompt=None):
         """多轮评估主流程"""
-        # 不再从文件读取 prompt
-        # system_prompt = open('prompts/evaluation_prompt.txt', 'r', encoding='utf-8').read()
-        messages = [{"role": "system", "content": EVALUATION_PROMPT}]
+        # 如果没有提供自定义 prompt，则使用默认 prompt
+        if evaluation_prompt is None:
+            evaluation_prompt = get_customized_prompt('evaluation')
+            
+        messages = [{"role": "system", "content": evaluation_prompt}]
 
         # 第一轮：初步评估
         messages.append({
