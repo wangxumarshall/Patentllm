@@ -45,7 +45,7 @@ class EvaluationAgent:
 待评估侵权线索：
 {chr(10).join(clues)}"""
 
-    def conduct_evaluation(self, research_materials, evaluation_prompt=None):
+    def conduct_evaluation(self, research_materials, evaluation_prompt=None, **kwargs):
         """多轮评估主流程"""
         # 如果没有提供自定义 prompt，则使用默认 prompt
         if evaluation_prompt is None:
@@ -92,4 +92,23 @@ class EvaluationAgent:
             "risk_level": level,
             "evidence": evidence.strip()
         } for idx, score, level, evidence in results]
+        
+        # 获取目标企业列表
+        target_companies = kwargs.get('target_companies', [])
+        
+        # 在处理评估结果时，对目标企业的线索进行特殊处理
+        for clue in evaluated_clues:
+            # 检查线索是否来自目标企业
+            if target_companies and 'source' in clue:
+                for company in target_companies:
+                    if company.lower() in clue['source'].lower():
+                        clue['is_target_company'] = True
+                        # 对目标企业降低风险阈值，提高关注度
+                        if clue['match_score'] >= 60:  # 对目标企业降低风险阈值
+                            clue['risk_level'] = '高'
+                        break
+                else:
+                    clue['is_target_company'] = False
+                
+        return evaluated_clues
     

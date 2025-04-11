@@ -3,7 +3,6 @@
 <head>
     <title>华为专利线索分析系统 - 上传</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <!-- 在现有 style 标签内添加 -->
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -97,13 +96,40 @@
             color: #3f51b5;
             font-weight: 500;
         }
+        
+        /* 新增输入框样式 */
+        .input-container {
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .text-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        label {
+            font-size: 14px;
+            color: #4b5563;
+            display: block;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="upload-container">
         <img src="https://www.huawei.com/favicon.ico" alt="华为Logo" class="logo">
-        <h1>华为专利线索分析系统</h1>
+        <h1>专利线索分析系统</h1>
 
+        <!-- 添加错误消息显示 -->
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+        
         <form action="/upload" method="POST" enctype="multipart/form-data">
             <div class="upload-box" onclick="document.getElementById('fileInput').click()">
                 <div class="upload-icon">📄</div>
@@ -117,16 +143,28 @@
 
             <input type="text" class="url-input" name="url" placeholder="输入专利网页URL (例如: https://example.com/patent)">
             
-            <!-- 新增公司名称输入 -->
-            <div class="company-input-container">
-                <label for="companyName">公司名称:</label>
-                <input type="text" id="companyName" name="company_name" placeholder="默认为全球知名ICT公司" class="company-input">
+            <!-- 公司名称输入 -->
+            <div class="input-container">
+                <label for="companyName">专利所属公司:</label>
+                <input type="text" id="companyName" name="company_name" placeholder="默认为华为" class="text-input">
             </div>
             
-            <!-- 新增技术领域关注点 -->
-            <div class="focus-area-container">
+            <!-- 新增目标企业输入 -->
+            <div class="input-container">
+                <label for="targetCompanies">目标企业(多个用逗号分隔):</label>
+                <input type="text" id="targetCompanies" name="target_companies" placeholder="例如: 小米,OPPO,三星" class="text-input">
+            </div>
+            
+            <!-- 排除企业输入 -->
+            <div class="input-container">
+                <label for="excludeCompanies">排除企业(多个用逗号分隔):</label>
+                <input type="text" id="excludeCompanies" name="exclude_companies" placeholder="例如: 华为,荣耀" class="text-input">
+            </div>
+            
+            <!-- 技术领域关注点 -->
+            <div class="input-container">
                 <label for="focusArea">重点关注领域:</label>
-                <input type="text" id="focusArea" name="focus_area" placeholder="例如: 5G、人工智能、云计算" class="focus-area-input">
+                <input type="text" id="focusArea" name="focus_area" placeholder="例如: 5G、人工智能、云计算" class="text-input">
             </div>
 
             <button type="submit" class="analyze-btn">开始分析</button>

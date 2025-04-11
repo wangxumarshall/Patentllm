@@ -46,7 +46,7 @@ EVALUATION_PROMPT = """你是一个X公司知识产权评估专家，负责：
       - 应用等同原则判断功能相同但实现方式略有不同的特征
    
    b. 时间有效性：
-      - 确认线索涉及专利的公开日/技术实施日晚于目标专利申请日（格式YYYY-MM-DD）
+      - 确认线索涉及专利的公开日/技术实施早晚于目标专利申请日（格式YYYY-MM-DD）
       - 对于无明确日期的线索，通过网页存档、产品发布会、新闻报道等佐证其时间点
    
    c. 地域覆盖：
@@ -166,6 +166,8 @@ def get_customized_prompt(prompt_type, **kwargs):
             - patent_info: 专利信息字典，包含专利号、申请日期等
             - focus_area: 重点关注的技术领域
             - risk_threshold: 风险阈值，默认为70
+            - target_companies: 目标企业列表，重点挖掘这些企业的侵权线索
+            - exclude_companies: 排除企业列表，不考虑这些企业的产品/技术
         
     Returns:
         str: 定制后的提示词
@@ -203,11 +205,65 @@ def get_customized_prompt(prompt_type, **kwargs):
         focus_area = kwargs['focus_area']
         prompt += f"\n\n请特别关注以下技术领域的侵权线索：{focus_area}"
     
+    # 添加目标企业侵权线索挖掘指令
+    if kwargs.get('target_companies') and prompt_type == 'research':
+        target_companies = kwargs['target_companies']
+        if isinstance(target_companies, list):
+            companies_str = '、'.join(target_companies)
+        else:
+            companies_str = target_companies
+            
+        prompt += f"\n\n请重点挖掘以下企业的产品或技术对{kwargs.get('company_name', 'X公司')}专利的侵权线索：{companies_str}"
+        prompt += "\n对这些企业的产品和技术进行深入调查，包括但不限于："
+        prompt += "\n- 官方产品文档和技术白皮书"
+        prompt += "\n- 产品说明书和用户手册"
+        prompt += "\n- 技术博客和开发者文档"
+        prompt += "\n- 相关专利申请和技术实现"
+        prompt += "\n- 市场销售和推广材料"
+    
+    # 添加排除企业
+    if kwargs.get('exclude_companies') and prompt_type == 'research':
+        exclude_companies = kwargs['exclude_companies']
+        if isinstance(exclude_companies, list):
+            exclude_str = '、'.join(exclude_companies)
+        else:
+            exclude_str = exclude_companies
+            
+        prompt += f"\n\n在搜索过程中，请排除以下企业的产品或技术：{exclude_str}"
+    
     # 调整风险阈值
     if kwargs.get('risk_threshold') and prompt_type == 'evaluation':
         risk_threshold = kwargs['risk_threshold']
         # 替换默认的风险阈值（70分）
         prompt = prompt.replace('≥70分为高风险', f'≥{risk_threshold}分为高风险')
+    
+    # 在评估阶段添加目标企业的特殊处理
+    if kwargs.get('target_companies') and prompt_type == 'evaluation':
+        target_companies = kwargs['target_companies']
+        if isinstance(target_companies, list):
+            companies_str = '、'.join(target_companies)
+        else:
+            companies_str = target_companies
+            
+        prompt += f"\n\n对于来自以下企业的侵权线索，请进行更严格的技术特征比对：{companies_str}"
+        prompt += "\n这些企业的侵权行为可能对专利持有方构成更大的市场威胁，请特别关注："
+        prompt += "\n- 核心技术特征的实现方式"
+        prompt += "\n- 市场竞争关系和业务重叠度"
+        prompt += "\n- 侵权行为的持续时间和规模"
+    
+    # 在总结阶段添加目标企业的特殊处理
+    if kwargs.get('target_companies') and prompt_type == 'summary':
+        target_companies = kwargs['target_companies']
+        if isinstance(target_companies, list):
+            companies_str = '、'.join(target_companies)
+        else:
+            companies_str = target_companies
+            
+        prompt += f"\n\n在总结报告中，请对以下企业的侵权线索进行单独章节的详细分析：{companies_str}"
+        prompt += "\n对于这些企业，请额外提供："
+        prompt += "\n- 企业背景和市场地位分析"
+        prompt += "\n- 与专利持有方的竞争关系"
+        prompt += "\n- 针对性的法律行动建议和策略"
     
     # 添加额外说明
     if kwargs.get('additional_instructions'):

@@ -123,26 +123,26 @@ class ResearchAgent:
 
     def conduct_research(self, patent_text, research_prompt):
         self.research_materials["original_text"] = patent_text
-
+    
         messages = [
             {"role": "system", "content": research_prompt},
             {"role": "user", "content": patent_text}
         ]
-
+    
         max_rounds = 5
         for _ in range(max_rounds):
             response = self.get_response(messages)
             if not response:
                 return None
-
+    
             assistant_msg = response.choices[0].message
             messages.append(assistant_msg)
-
+    
             if not assistant_msg.tool_calls:
                 if "研究完成" in assistant_msg.content:
                     return self.research_materials
                 continue
-
+    
             tool_responses = []
             for tool_call in assistant_msg.tool_calls:
                 if tool_call.function.name == "search_internet":
@@ -156,9 +156,32 @@ class ResearchAgent:
                         "name": "search_internet",
                         "content": result
                     })
-
+    
             messages.extend(tool_responses)
             time.sleep(1)  # 避免触发API速率限制
-
+    
+        # 在处理搜索结果时，添加对目标企业的标记
+        # 从 research_prompt 中提取目标企业信息
+        target_companies = []
+        if "请重点挖掘以下企业的产品或技术" in research_prompt:
+            try:
+                target_section = research_prompt.split("请重点挖掘以下企业的产品或技术")[1].split("\n")[0]
+                companies_part = target_section.split("：")[1] if "：" in target_section else ""
+                if companies_part:
+                    target_companies = [company.strip() for company in companies_part.split("、")]
+            except:
+                pass
+        
+        # 标记来自目标企业的搜索结果
+        for result in self.research_materials.get('search_results', []):
+            result_text = result.get('result', '').lower()
+            for company in target_companies:
+                if company.lower() in result_text:
+                    result['is_target_company'] = True
+                    # 可以添加额外的处理逻辑，例如提高优先级
+                    break
+            else:
+                result['is_target_company'] = False
+        
         return self.research_materials
     

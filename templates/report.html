@@ -6,6 +6,7 @@
     <title>华为专利线索分析报告 - 华为专利线索分析系统</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.1.0/github-markdown.min.css">
+    <!-- 在现有 head 标签内添加样式 -->
     <style>
         :root {
             --content-padding: 60px;
@@ -311,6 +312,32 @@
                     p.remove();
                 }
             });
+        });
+    </script>
+
+    <!-- 在现有 body 标签结束前添加脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 查找目标企业侵权线索并添加高亮样式
+            const targetCompanies = "{{ session.analysis_params.target_companies }}".split(',');
+            if (targetCompanies[0]) {
+                const headings = document.querySelectorAll('h4');
+                headings.forEach(heading => {
+                    targetCompanies.forEach(company => {
+                        if (heading.textContent.includes(company.trim())) {
+                            // 为目标企业添加高亮样式
+                            const section = heading.closest('div');
+                            if (section) {
+                                section.classList.add('target-company');
+                                const label = document.createElement('span');
+                                label.className = 'target-company-label';
+                                label.textContent = '目标企业';
+                                heading.appendChild(label);
+                            }
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>

@@ -22,12 +22,13 @@ class SummaryAgent:
             return None
 
     def generate_summary(self, research_materials, summary_prompt):
-        # 新增评估结果上下文
+        # 新增评估结果上下文，包含目标企业标记
         evaluation_context = "\n".join([
             f"### 线索{i + 1}评估结果\n"
             f"- 匹配度：{clue['match_score']}分\n"
             f"- 风险等级：{clue['risk_level']}\n"
             f"- 证据：{clue['evidence']}"
+            + (f"\n- 目标企业：是" if clue.get('is_target_company', False) else "")
             for i, clue in enumerate(research_materials.get('evaluated_clues', []))
         ])
 
