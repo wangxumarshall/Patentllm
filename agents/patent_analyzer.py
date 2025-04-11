@@ -1,6 +1,7 @@
 from agents.research_agent import ResearchAgent
 from agents.summary_agent import SummaryAgent
 from agents.evaluation_agent import EvaluationAgent
+from prompts.prompt_templates import EVALUATION_PROMPT
 
 
 class PatentAnalyzer:

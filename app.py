@@ -3,20 +3,22 @@ import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import random
+import requests
 from agents.patent_analyzer import PatentAnalyzer
 from config.settings import UPLOAD_FOLDER, MAX_CONTENT_LENGTH, SECRET_KEY
+from prompts.prompt_templates import RESEARCH_PROMPT, EVALUATION_PROMPT, SUMMARY_PROMPT
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
-# 读取提示词文件
-with open('prompts/research_prompt.txt', 'r', encoding='utf-8') as f:
-    research_prompt = f.read()
-
-with open('prompts/summary_prompt.txt', 'r', encoding='utf-8') as f:
-    summary_prompt = f.read()
+# 不再需要读取提示词文件
+# with open('prompts/research_prompt.txt', 'r', encoding='utf-8') as f:
+#     research_prompt = f.read()
+# 
+# with open('prompts/summary_prompt.txt', 'r', encoding='utf-8') as f:
+#     summary_prompt = f.read()
 
 
 @app.route('/')
@@ -85,7 +87,8 @@ def analyze():
             return jsonify(error="无法提取有效文本内容")
 
         analyzer = PatentAnalyzer()
-        result = analyzer.analyze_patent(patent_text, research_prompt, summary_prompt)
+        # 使用新的 prompt 变量
+        result = analyzer.analyze_patent(patent_text, RESEARCH_PROMPT, SUMMARY_PROMPT)
         session['analysis_result'] = result
         return jsonify(result=result)
 

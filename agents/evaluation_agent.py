@@ -5,6 +5,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import re
+from prompts.prompt_templates import EVALUATION_PROMPT
 
 
 class EvaluationAgent:
@@ -46,8 +47,9 @@ class EvaluationAgent:
 
     def conduct_evaluation(self, research_materials):
         """多轮评估主流程"""
-        system_prompt = open('prompts/evaluation_prompt.txt', 'r', encoding='utf-8').read()
-        messages = [{"role": "system", "content": system_prompt}]
+        # 不再从文件读取 prompt
+        # system_prompt = open('prompts/evaluation_prompt.txt', 'r', encoding='utf-8').read()
+        messages = [{"role": "system", "content": EVALUATION_PROMPT}]
 
         # 第一轮：初步评估
         messages.append({
