@@ -7,6 +7,7 @@ import requests
 from agents.patent_analyzer import PatentAnalyzer
 from config.settings import UPLOAD_FOLDER, MAX_CONTENT_LENGTH, SECRET_KEY
 from prompts.prompt_templates import get_customized_prompt
+import traceback # 导入 traceback 模块
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -140,6 +141,7 @@ def analyze():
 
     except Exception as e:
         print(f"分析过程中出错: {str(e)}")
+        traceback.print_exc()  # 打印完整的堆栈跟踪到终端
         return jsonify(error=f"分析过程中出错: {str(e)}")
 
 

@@ -3,7 +3,9 @@ import json
 import time
 from openai import OpenAI
 from PyPDF2 import PdfReader
-from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, SERP_API_KEY, SERP_API_URL
+# from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, SERP_API_KEY, SERP_API_URL
+from config.settings import MODEL_CONFIG, SERP_API_KEY, SERP_API_URL # 修改导入
+from agents.model_adapter import get_model_adapter # 导入适配器工厂函数
 
 # 工具定义
 tools = [
@@ -27,10 +29,11 @@ tools = [
 
 class ResearchAgent:
     def __init__(self):
-        self.client = OpenAI(
-            api_key=OPENAI_API_KEY,
-            base_url=OPENAI_BASE_URL
-        )
+        # self.client = OpenAI(
+        #     api_key=OPENAI_API_KEY,
+        #     base_url=OPENAI_BASE_URL
+        # )
+        self.model_adapter = get_model_adapter(MODEL_CONFIG)
         self.search_count = 0
         self.research_materials = {
             "original_text": "",
@@ -109,17 +112,27 @@ class ResearchAgent:
             return "暂时无法获取SerpAPI搜索结果"
 
     def get_response(self, messages):
-        try:
-            completion = self.client.chat.completions.create(
-                model="deepseek-chat",
-                messages=messages,
-                tools=tools,
-                tool_choice="auto"
-            )
-            return completion
-        except Exception as e:
-            print(f"API调用失败: {str(e)}")
-            return None
+        # try:
+        #     completion = self.client.chat.completions.create(
+        #         model="deepseek-chat", # 这个模型名也应该来自配置
+        #         messages=messages,
+        #         tools=tools, # tools 可能需要根据模型能力调整
+        #         tool_choice="auto"
+        #     )
+        #     return completion
+        # except Exception as e:
+        #     print(f"API调用失败: {str(e)}")
+        #     return None
+        
+        # 注意：Ollama模型可能不支持OpenAI的tools格式，如果使用Ollama且需要工具调用，
+        # OllamaAdapter中的get_response需要特殊处理工具调用逻辑，或者禁用工具调用。
+        # 这里假设ResearchAgent的get_response总是需要tools，如果Ollama不支持，需要调整。
+        kwargs_for_model = {"model": MODEL_CONFIG.get("model_name")}
+        if MODEL_CONFIG.get("type") == "openai": # 只有OpenAI模型明确支持tools
+            kwargs_for_model["tools"] = tools
+            kwargs_for_model["tool_choice"] = "auto"
+        
+        return self.model_adapter.get_response(messages, **kwargs_for_model)
 
     def conduct_research(self, patent_text, research_prompt):
         self.research_materials["original_text"] = patent_text
@@ -136,7 +149,11 @@ class ResearchAgent:
                 return None
     
             assistant_msg = response.choices[0].message
-            messages.append(assistant_msg)
+            # Convert MockMessage to dict before appending if it's not already a dict
+            if hasattr(assistant_msg, 'content'): # Check if it's a MockMessage-like object
+                messages.append({"role": "assistant", "content": assistant_msg.content})
+            else: # Assuming it's already a dict (e.g. from OpenAI response)
+                messages.append(assistant_msg)
     
             if not assistant_msg.tool_calls:
                 if "研究完成" in assistant_msg.content:

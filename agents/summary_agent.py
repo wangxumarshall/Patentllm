@@ -1,25 +1,30 @@
 from openai import OpenAI
 import markdown
-from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL
-
+# from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL # 不再直接使用这些
+from config.settings import MODEL_CONFIG # 导入新的模型配置
+from agents.model_adapter import get_model_adapter # 导入适配器工厂函数
+import json # 确保导入json
 
 class SummaryAgent:
     def __init__(self):
-        self.client = OpenAI(
-            api_key=OPENAI_API_KEY,
-            base_url=OPENAI_BASE_URL
-        )
+        # self.client = OpenAI(
+        #     api_key=OPENAI_API_KEY,
+        #     base_url=OPENAI_BASE_URL
+        # )
+        self.model_adapter = get_model_adapter(MODEL_CONFIG)
 
-    def get_response(self, messages):
-        try:
-            completion = self.client.chat.completions.create(
-                model="deepseek-chat",
-                messages=messages
-            )
-            return completion
-        except Exception as e:
-            print(f"API调用失败: {str(e)}")
-            return None
+    def get_response(self, messages, **kwargs):
+        # try:
+        #     completion = self.client.chat.completions.create(
+        #         model="deepseek-chat", # 这个模型名也应该来自配置
+        #         messages=messages,
+        #         **kwargs
+        #     )
+        #     return completion
+        # except Exception as e:
+        #     print(f"API调用失败: {str(e)}")
+        #     return None
+        return self.model_adapter.get_response(messages, model=MODEL_CONFIG.get("model_name"), **kwargs)
 
     def generate_summary(self, research_materials, summary_prompt):
         # 新增评估结果上下文，包含目标企业标记

@@ -1,19 +1,22 @@
 import yaml
 from openai import OpenAI
-from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL
+# from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL # Remove this line
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime
 import re
 from prompts.prompt_templates import get_customized_prompt
-
+# from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL
+from config.settings import MODEL_CONFIG # 修改导入
+from agents.model_adapter import get_model_adapter # 导入适配器工厂函数
 
 class EvaluationAgent:
     def __init__(self):
-        self.client = OpenAI(
-            api_key=OPENAI_API_KEY,
-            base_url=OPENAI_BASE_URL
-        )
+        # self.client = OpenAI(
+        #     api_key=OPENAI_API_KEY,
+        #     base_url=OPENAI_BASE_URL
+        # )
+        self.model_adapter = get_model_adapter(MODEL_CONFIG)
         # 加载评估规则
         with open('config/evaluation_rules.yaml', 'r', encoding='utf-8') as f:
             self.evaluation_rules = yaml.safe_load(f)['evaluation_criteria']
@@ -61,37 +64,45 @@ class EvaluationAgent:
 
         max_rounds = 3
         for _ in range(max_rounds):
-            response = self.client.chat.completions.create(
-                model="deepseek-chat",
-                messages=messages,
-                temperature=0.3  # 降低创造性，确保严谨性
+            # response = self.client.chat.completions.create(
+            #     model="deepseek-chat", # 这个模型名也应该来自配置
+            #     messages=messages,
+            #     temperature=0.3  # 降低创造性，确保严谨性
+            # )
+            response = self.model_adapter.get_response(
+                messages,
+                model=MODEL_CONFIG.get("model_name"), 
+                temperature=0.3
             )
+            if not response: # 检查适配器调用是否成功
+                print("Failed to get response from model adapter in EvaluationAgent.")
+                return None # 或者进行其他错误处理
             assistant_msg = response.choices[0].message
 
             # 提取评估结果或追问问题
             if "请提供" in assistant_msg.content:
                 # 触发追问，要求用户补充信息（实际场景中可对接企业知识库）
-                messages.append(assistant_msg)
+                messages.append({"role": "assistant", "content": assistant_msg.content}) # Corrected line
                 # 模拟用户回复（实际需对接前端交互）
                 user_reply = "线索A的公开日为2024-05-15，实施地在中国广东"
                 messages.append({"role": "user", "content": user_reply})
             else:
                 # 解析评估报告
-                evaluated_clues = self.parse_evaluation_result(assistant_msg.content)
+                evaluated_clues = self.parse_evaluation_result(assistant_msg.content, **kwargs) # 将kwargs传递下去
                 return evaluated_clues  # 评估完成
 
         return None  # 超过最大轮次
 
-    def parse_evaluation_result(self, content):
+    def parse_evaluation_result(self, content, **kwargs): # 添加**kwargs以接收target_companies
         """解析模型返回的结构化评估结果"""
         pattern = r"线索(\d+):\n+匹配度得分：(\d+\.\d+)分\n+法律风险等级：(\w+)\n+证据链完整性：(.*?)\n+"
-        results = re.findall(pattern, content, re.DOTALL)
-        return [{
+        results_raw = re.findall(pattern, content, re.DOTALL)
+        evaluated_clues =  [{ # Renamed 'results' to 'evaluated_clues' and moved here
             "clue_id": idx,
             "match_score": float(score),
             "risk_level": level,
             "evidence": evidence.strip()
-        } for idx, score, level, evidence in results]
+        } for idx, score, level, evidence in results_raw]
         
         # 获取目标企业列表
         target_companies = kwargs.get('target_companies', [])
@@ -99,7 +110,7 @@ class EvaluationAgent:
         # 在处理评估结果时，对目标企业的线索进行特殊处理
         for clue in evaluated_clues:
             # 检查线索是否来自目标企业
-            if target_companies and 'source' in clue:
+            if target_companies and 'source' in clue: # Assuming 'source' might be in the clue data from research_materials
                 for company in target_companies:
                     if company.lower() in clue['source'].lower():
                         clue['is_target_company'] = True
@@ -109,6 +120,9 @@ class EvaluationAgent:
                         break
                 else:
                     clue['is_target_company'] = False
+            # Ensure 'is_target_company' is present even if not a target or no source
+            elif 'is_target_company' not in clue:
+                clue['is_target_company'] = False
                 
         return evaluated_clues
     
