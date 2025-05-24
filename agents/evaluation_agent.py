@@ -95,27 +95,74 @@ class EvaluationAgent:
 
     def parse_evaluation_result(self, content, **kwargs): # 添加**kwargs以接收target_companies
         """解析模型返回的结构化评估结果"""
-        pattern = r"线索(\d+):\n+匹配度得分：(\d+\.\d+)分\n+法律风险等级：(\w+)\n+证据链完整性：(.*?)\n+"
-        results_raw = re.findall(pattern, content, re.DOTALL)
+        evaluated_clues = []
+
+        # 1. Remove "final answer:" prefix if it exists
+        if content.startswith("final answer:"):
+            content = content[len("final answer:"):].strip()
+
+        # 2. Remove <think>...</think> block
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+
+        # Split content into sections for each clue.
+        # Assuming "根据提供的评估信息，以下是针对**线索X**的详细分析和建议：" is a reliable marker.
+        # We can split by "---" which seems to be a separator, and then look for the clue marker within each part.
+        # However, a more robust way might be to find all clue markers first.
+
+        clue_sections = re.split(r'(?=根据提供的评估信息，以下是针对\*\*线索\d+\*\*的详细分析和建议：)', content)
         
-        # 如果没有找到匹配的结果，尝试创建一个默认的评估结果
-        if not results_raw:
-            print("警告：无法从模型响应中解析出结构化评估结果，将创建默认评估结果")
-            # 创建一个默认的评估结果
+        for section in clue_sections:
+            if not section.strip():
+                continue
+
+            clue_id_match = re.search(r"根据提供的评估信息，以下是针对\*\*线索(\d+)\*\*的详细分析和建议：", section)
+            if not clue_id_match:
+                continue
+            
+            clue_id = clue_id_match.group(1)
+            
+            match_score = 0.0
+            risk_level = "未知" # Default in case parsing fails for these fields
+            evidence = "未能提取" # Default
+
+            # Extract Match Score
+            score_match = re.search(r"### \*\*1\. 匹配度分析（(\d+)分）\*\*", section)
+            if score_match:
+                match_score = float(score_match.group(1))
+
+            # Extract Risk Level
+            risk_match = re.search(r"- \*\*风险等级：(\w+)\*\*", section)
+            if risk_match:
+                risk_level = risk_match.group(1)
+            
+            # Extract Evidence
+            # This regex captures text after "### **2. 证据分析**" until it hits another "### **" (potential next section like "### **3. ..."),
+            # or "---" (common separator), or end of the section string ($).
+            evidence_match = re.search(r"### \*\*2\. 证据分析\*\*(.*?)(?=### \*\*|\n---\n|$)", section, re.DOTALL)
+            if evidence_match:
+                evidence_text = evidence_match.group(1).strip()
+                # Clean up bullet points and extra whitespace
+                evidence_lines = [line.strip() for line in evidence_text.split('\n') if line.strip() and not line.strip().startswith("---")]
+                evidence = "\n".join(evidence_lines)
+            
+            evaluated_clues.append({
+                "clue_id": clue_id,
+                "match_score": match_score,
+                "risk_level": risk_level,
+                "evidence": evidence
+            })
+        
+        # Fallback: If after attempting to parse all sections, evaluated_clues is still empty,
+        # then the new parsing logic failed to find any structured clues.
+        if not evaluated_clues:
+            print("警告：无法从模型响应中解析出结构化评估结果（新格式解析未找到有效线索或内容为空），将创建默认评估结果")
             evaluated_clues = [{
-                "clue_id": "1",
-                "match_score": 75.0,  # 默认中等匹配度
+                "clue_id": "1", # Defaulting to "1" as per original fallback
+                "match_score": 75.0,
                 "risk_level": "中",
-                "evidence": "模型未提供结构化评估，但已完成基本分析"
+                "evidence": "模型未提供结构化评估或解析失败，已完成基本分析"
             }]
-        else:
-            evaluated_clues = [{
-                "clue_id": idx,
-                "match_score": float(score),
-                "risk_level": level,
-                "evidence": evidence.strip()
-            } for idx, score, level, evidence in results_raw]
-        
+
         # 获取目标企业列表
         target_companies = kwargs.get('target_companies', [])
         
