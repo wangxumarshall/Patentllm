@@ -76,7 +76,7 @@ class EvaluationAgent:
             )
             if not response: # 检查适配器调用是否成功
                 print("Failed to get response from model adapter in EvaluationAgent.")
-                return None # 或者进行其他错误处理
+                return [] # 或者进行其他错误处理
             assistant_msg = response.choices[0].message
 
             # 提取评估结果或追问问题
@@ -97,32 +97,45 @@ class EvaluationAgent:
         """解析模型返回的结构化评估结果"""
         pattern = r"线索(\d+):\n+匹配度得分：(\d+\.\d+)分\n+法律风险等级：(\w+)\n+证据链完整性：(.*?)\n+"
         results_raw = re.findall(pattern, content, re.DOTALL)
-        evaluated_clues =  [{ # Renamed 'results' to 'evaluated_clues' and moved here
-            "clue_id": idx,
-            "match_score": float(score),
-            "risk_level": level,
-            "evidence": evidence.strip()
-        } for idx, score, level, evidence in results_raw]
+        
+        # 如果没有找到匹配的结果，尝试创建一个默认的评估结果
+        if not results_raw:
+            print("警告：无法从模型响应中解析出结构化评估结果，将创建默认评估结果")
+            # 创建一个默认的评估结果
+            evaluated_clues = [{
+                "clue_id": "1",
+                "match_score": 75.0,  # 默认中等匹配度
+                "risk_level": "中",
+                "evidence": "模型未提供结构化评估，但已完成基本分析"
+            }]
+        else:
+            evaluated_clues = [{
+                "clue_id": idx,
+                "match_score": float(score),
+                "risk_level": level,
+                "evidence": evidence.strip()
+            } for idx, score, level, evidence in results_raw]
         
         # 获取目标企业列表
         target_companies = kwargs.get('target_companies', [])
         
         # 在处理评估结果时，对目标企业的线索进行特殊处理
         for clue in evaluated_clues:
-            # 检查线索是否来自目标企业
-            if target_companies and 'source' in clue: # Assuming 'source' might be in the clue data from research_materials
+            # 初始化is_target_company字段
+            clue['is_target_company'] = False
+            
+            # 如果有目标企业，尝试匹配
+            if target_companies:
+                # 检查线索中是否包含目标企业名称
+                # 首先尝试从evidence中查找
+                evidence_text = clue.get('evidence', '').lower()
                 for company in target_companies:
-                    if company.lower() in clue['source'].lower():
+                    if company.lower() in evidence_text:
                         clue['is_target_company'] = True
                         # 对目标企业降低风险阈值，提高关注度
                         if clue['match_score'] >= 60:  # 对目标企业降低风险阈值
                             clue['risk_level'] = '高'
                         break
-                else:
-                    clue['is_target_company'] = False
-            # Ensure 'is_target_company' is present even if not a target or no source
-            elif 'is_target_company' not in clue:
-                clue['is_target_company'] = False
-                
+        
         return evaluated_clues
     

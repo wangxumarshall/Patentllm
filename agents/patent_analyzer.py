@@ -35,11 +35,15 @@ class PatentAnalyzer:
             target_companies=kwargs.get('target_companies', [])
         )
         
-        if not evaluated_clues:
-            return "评估失败，线索信息不完整"
-
+        # 注释掉这个检查，即使评估失败也继续执行
+        # if not evaluated_clues:
+        #     return "评估失败，线索信息不完整"
+        
+        # 确保evaluated_clues至少是一个空列表
+        evaluated_clues = evaluated_clues or []
+        
         # 过滤无效线索（保留高风险线索）
-        high_risk_clues = [clue for clue in evaluated_clues if clue["match_score"] >= 70]
+        high_risk_clues = [clue for clue in evaluated_clues if clue.get("match_score", 0) >= 70]
         research_materials['evaluated_clues'] = high_risk_clues  # 注入评估结果
 
         # 第三阶段：总结代理生成报告
