@@ -45,6 +45,22 @@ class OpenAIAdapter(BaseModelAdapter):
             return None
         except APIError as e: # Catch other OpenAI API errors
             print(f"OpenAI APIError: An API error occurred with {self.client.base_url}. Error: {str(e)}")
+            # Attempt to log more details from the APIError object
+            print(f"  Error Type: {type(e).__name__}")
+            if hasattr(e, 'message') and e.message:
+                print(f"  Error Message: {e.message}")
+            if hasattr(e, 'status_code') and e.status_code:
+                print(f"  Status Code: {e.status_code}")
+            if hasattr(e, 'body') and e.body:
+                try:
+                    # Try to pretty-print if JSON, otherwise print as string
+                    body_json = json.dumps(e.body, indent=2)
+                    print(f"  Error Body: {body_json}")
+                except TypeError:
+                    print(f"  Error Body: {str(e.body)}")
+            if hasattr(e, 'code') and e.code: # sometimes 'code' attribute exists
+                 print(f"  Error Code: {e.code}")
+            print("  Traceback:")
             traceback.print_exc()
             return None
         except Exception as e:
