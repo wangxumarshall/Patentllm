@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from openai import OpenAI, APIError, APIConnectionError, RateLimitError, AuthenticationError
 import requests
 import json
+import traceback
 
 class BaseModelAdapter(ABC):
     @abstractmethod
@@ -28,18 +29,23 @@ class OpenAIAdapter(BaseModelAdapter):
             return completion
         except APIConnectionError as e:
             print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error: {str(e)}")
+            traceback.print_exc()
             return None
         except RateLimitError as e:
             print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error: {str(e)}")
+            traceback.print_exc()
             return None
         except AuthenticationError as e:
             print(f"OpenAI API AuthenticationError: Authentication failed for {self.client.base_url}. Error: {str(e)}")
+            traceback.print_exc()
             return None
         except APIError as e: # Catch other OpenAI API errors
             print(f"OpenAI APIError: An API error occurred with {self.client.base_url}. Error: {str(e)}")
+            traceback.print_exc()
             return None
         except Exception as e:
             print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error: {str(e)}")
+            traceback.print_exc()
             return None
 
 class OllamaAdapter(BaseModelAdapter):
