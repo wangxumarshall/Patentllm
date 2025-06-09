@@ -19,11 +19,12 @@ ENABLE_EVALUATION = os.getenv('ENABLE_EVALUATION', 'True').lower() == 'true'
 # 模型配置
 # 可以将这些配置移到环境变量或专门的YAML/JSON文件中
 ACTIVE_MODEL_CONFIG = {
-    "type": os.getenv('MODEL_TYPE', 'ollama'), # 默认为openai, 可设置为 'ollama'
+    "type": os.getenv('MODEL_TYPE', 'openai'), # 默认为openai, 可设置为 'ollama'
     "openai": {
-        "api_key": os.getenv('OPENAI_API_KEY', 'YOUR_OPENAI_API_KEY'),
-        "base_url": os.getenv('OPENAI_BASE_URL', 'https://api.deepseek.com/'),
-        "default_model": "deepseek-chat"
+        "api_key": "sk-1234",  # 将这里替换为您的真实 OpenAI API Key
+        #"base_url": os.getenv('OPENAI_BASE_URL', 'https://api.deepseek.com/'),
+        "base_url": “https://api.openai.rnd.huawei.com”),
+        "default_model": "qwq-32b-128k"
     },
     "ollama": {
         "base_url": os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434'),
