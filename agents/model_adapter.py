@@ -42,23 +42,34 @@ class OpenAIAdapter(BaseModelAdapter):
             print(f"OpenAI API AuthenticationError: Authentication failed for {self.client.base_url}. Error: {str(e)}")
             return None
         except APIError as e: # Catch other OpenAI API errors
-            print(f"OpenAI APIError: An API error occurred with {self.client.base_url}. Error: {str(e)}")
-            # Attempt to log more details from the APIError object
-            print(f"  Error Type: {type(e).__name__}")
-            if hasattr(e, 'message') and e.message:
+            # Modified initial print line to avoid str(e) directly and be more specific about the error type.
+            print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
+
+            # Ensure detailed attributes are printed if available.
+            # The existing print(f"  Error Type: {type(e).__name__}") is redundant if the line above is changed, so it can be removed or commented.
+            # Let's remove it to avoid redundancy.
+
+            if hasattr(e, 'message') and e.message is not None: # Check for None explicitly
                 print(f"  Error Message: {e.message}")
-            if hasattr(e, 'status_code') and e.status_code:
+            else:
+                print(f"  Error Message: Not available") # Indicate if not available
+
+            if hasattr(e, 'status_code') and e.status_code is not None:
                 print(f"  Status Code: {e.status_code}")
-            if hasattr(e, 'code') and e.code:
+            else:
+                print(f"  Status Code: Not available")
+
+            if hasattr(e, 'code') and e.code is not None:
                  print(f"  Error Code: {e.code}")
-            if hasattr(e, 'body') and e.body:
-                body_info = f"type: {type(e.body).__name__}, length: {len(str(e.body)) if e.body is not None else 0}"
+            else:
+                print(f"  Error Code: Not available")
+
+            if hasattr(e, 'body') and e.body is not None:
+                body_info = f"type: {type(e.body).__name__}, length: {len(str(e.body))}"
                 print(f"  Error Body Info: {body_info}. Content omitted for brevity. Enable debug for full body.")
-            # If e.body contains a simple 'message' or 'error' field and is a dict, consider printing that.
-            # For example, if isinstance(e.body, dict) and e.body.get('error'):
-            #    print(f"  Error Body Detail: {e.body.get('error')}")
-            # However, to keep it simple and directly address verbosity:
-            # The line above with "Content omitted for brevity" is the primary change for e.body.
+            else:
+                print(f"  Error Body Info: Not available or empty.")
+
             print("  Traceback:")
             traceback.print_exc()
             return None
