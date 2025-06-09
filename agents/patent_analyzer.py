@@ -2,7 +2,7 @@ from agents.research_agent import ResearchAgent
 from agents.summary_agent import SummaryAgent
 from agents.evaluation_agent import EvaluationAgent
 from prompts.prompt_templates import get_customized_prompt
-
+from config.settings import ENABLE_EVALUATION # 导入新的配置项
 
 class PatentAnalyzer:
     def __init__(self):
@@ -19,21 +19,23 @@ class PatentAnalyzer:
         if not research_materials:
             return "分析失败"
 
-        # 获取评估阶段的自定义 prompt
-        patent_info = self.extract_patent_info(research_materials)
-        evaluation_prompt = get_customized_prompt(
-            'evaluation', 
-            company_name=kwargs.get('company_name', '全球知名ICT公司'),
-            patent_info=patent_info,
-            target_companies=kwargs.get('target_companies', [])
-        )
-        
-        # 第二阶段：评估代理验证侵权线索
-        evaluated_clues = self.evaluation_agent.conduct_evaluation(
-            research_materials, 
-            evaluation_prompt,
-            target_companies=kwargs.get('target_companies', [])
-        )
+        evaluated_clues = [] # 初始化为空列表
+        if ENABLE_EVALUATION: # 检查是否启用了评估功能
+            # 获取评估阶段的自定义 prompt
+            patent_info = self.extract_patent_info(research_materials)
+            evaluation_prompt = get_customized_prompt(
+                'evaluation', 
+                company_name=kwargs.get('company_name', '全球知名ICT公司'),
+                patent_info=patent_info,
+                target_companies=kwargs.get('target_companies', [])
+            )
+            
+            # 第二阶段：评估代理验证侵权线索
+            evaluated_clues = self.evaluation_agent.conduct_evaluation(
+                research_materials, 
+                evaluation_prompt,
+                target_companies=kwargs.get('target_companies', [])
+            )
         
         # 注释掉这个检查，即使评估失败也继续执行
         # if not evaluated_clues:

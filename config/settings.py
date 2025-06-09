@@ -13,6 +13,9 @@ MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 # Flask 应用密钥
 SECRET_KEY = 'your-secret-key-123'
 
+# 是否启用评估功能
+ENABLE_EVALUATION = os.getenv('ENABLE_EVALUATION', 'True').lower() == 'true'
+
 # 模型配置
 # 可以将这些配置移到环境变量或专门的YAML/JSON文件中
 ACTIVE_MODEL_CONFIG = {
