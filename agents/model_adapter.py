@@ -29,17 +29,19 @@ class OpenAIAdapter(BaseModelAdapter):
             completion = self.client.chat.completions.create(**params)
             return completion
         except APIConnectionError as e:
-            print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error: {str(e)}")
+            print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error.")
             traceback.print_exc()
             http_proxy = os.getenv('HTTP_PROXY')
             https_proxy = os.getenv('HTTPS_PROXY')
             print(f"Proxy Information: HTTP_PROXY='{http_proxy}' HTTPS_PROXY='{https_proxy}'")
             return None
         except RateLimitError as e:
-            print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error: {str(e)}")
+            print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error. ")
+            traceback.print_exc()
             return None
         except AuthenticationError as e:
-            print(f"OpenAI API AuthenticationError: Authentication failed for {self.client.base_url}. Error: {str(e)}")
+            print(f"OpenAI API AuthenticationError: Authentication failed for {self.client.base_url}. Error. ")
+            traceback.print_exc()
             return None
         except APIError as e: # Catch other OpenAI API errors
             # Modified initial print line to avoid str(e) directly and be more specific about the error type.
@@ -74,7 +76,7 @@ class OpenAIAdapter(BaseModelAdapter):
             traceback.print_exc()
             return None
         except Exception as e:
-            print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error: {str(e)}")
+            print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error.")
             traceback.print_exc()
             return None
 
