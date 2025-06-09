@@ -23,7 +23,7 @@ ACTIVE_MODEL_CONFIG = {
     "openai": {
         "api_key": "sk-1234",  # 将这里替换为您的真实 OpenAI API Key
         #"base_url": os.getenv('OPENAI_BASE_URL', 'https://api.deepseek.com/'),
-        "base_url": “https://api.openai.rnd.huawei.com”),
+        "base_url": os.getenv('OPENAI_BASE_URL', 'https://api.openai.rnd.huawei.com'),
         "default_model": "qwq-32b-128k"
     },
     "ollama": {
