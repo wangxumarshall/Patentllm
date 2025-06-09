@@ -66,7 +66,7 @@ class OpenAIAdapter(BaseModelAdapter):
             traceback.print_exc()
             return None
         except Exception as e:
-            print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error.}")
+            print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error.")
             traceback.print_exc()
             return None
 
