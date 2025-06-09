@@ -3,6 +3,7 @@ from openai import OpenAI, APIError, APIConnectionError, RateLimitError, Authent
 import requests
 import json
 import traceback
+import os
 
 class BaseModelAdapter(ABC):
     @abstractmethod
@@ -30,6 +31,9 @@ class OpenAIAdapter(BaseModelAdapter):
         except APIConnectionError as e:
             print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error: {str(e)}")
             traceback.print_exc()
+            http_proxy = os.getenv('HTTP_PROXY')
+            https_proxy = os.getenv('HTTPS_PROXY')
+            print(f"Proxy Information: HTTP_PROXY='{http_proxy}' HTTPS_PROXY='{https_proxy}'")
             return None
         except RateLimitError as e:
             print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error: {str(e)}")
