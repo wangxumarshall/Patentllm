@@ -51,15 +51,16 @@ class OpenAIAdapter(BaseModelAdapter):
                 print(f"  Error Message: {e.message}")
             if hasattr(e, 'status_code') and e.status_code:
                 print(f"  Status Code: {e.status_code}")
-            if hasattr(e, 'body') and e.body:
-                try:
-                    # Try to pretty-print if JSON, otherwise print as string
-                    body_json = json.dumps(e.body, indent=2)
-                    print(f"  Error Body: {body_json}")
-                except TypeError:
-                    print(f"  Error Body: {str(e.body)}")
-            if hasattr(e, 'code') and e.code: # sometimes 'code' attribute exists
+            if hasattr(e, 'code') and e.code:
                  print(f"  Error Code: {e.code}")
+            if hasattr(e, 'body') and e.body:
+                body_info = f"type: {type(e.body).__name__}, length: {len(str(e.body)) if e.body is not None else 0}"
+                print(f"  Error Body Info: {body_info}. Content omitted for brevity. Enable debug for full body.")
+            # If e.body contains a simple 'message' or 'error' field and is a dict, consider printing that.
+            # For example, if isinstance(e.body, dict) and e.body.get('error'):
+            #    print(f"  Error Body Detail: {e.body.get('error')}")
+            # However, to keep it simple and directly address verbosity:
+            # The line above with "Content omitted for brevity" is the primary change for e.body.
             print("  Traceback:")
             traceback.print_exc()
             return None
