@@ -15,11 +15,16 @@ class OpenAIAdapter(BaseModelAdapter):
 
     def get_response(self, messages, **kwargs):
         try:
-            completion = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
+            # Prepare parameters for the API call
+            # Prioritize model from kwargs if provided, otherwise use self.model_name
+            params = {
+                "messages": messages,
                 **kwargs
-            )
+            }
+            if 'model' not in params:
+                params['model'] = self.model_name
+            
+            completion = self.client.chat.completions.create(**params)
             return completion
         except Exception as e:
             print(f"OpenAI API call failed: {str(e)}")
