@@ -37,11 +37,9 @@ class OpenAIAdapter(BaseModelAdapter):
             return None
         except RateLimitError as e:
             print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error: {str(e)}")
-            traceback.print_exc()
             return None
         except AuthenticationError as e:
             print(f"OpenAI API AuthenticationError: Authentication failed for {self.client.base_url}. Error: {str(e)}")
-            traceback.print_exc()
             return None
         except APIError as e: # Catch other OpenAI API errors
             print(f"OpenAI APIError: An API error occurred with {self.client.base_url}. Error: {str(e)}")
