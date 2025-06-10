@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from openai import OpenAI, APIError, APIConnectionError, RateLimitError, AuthenticationError
+import httpx
 import requests
 import json
 import traceback
@@ -12,8 +13,47 @@ class BaseModelAdapter(ABC):
         pass
 
 class OpenAIAdapter(BaseModelAdapter):
-    def __init__(self, api_key, base_url, model_name, request_timeout=120, max_retries=5, initial_backoff_seconds=2):
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
+    def __init__(self, api_key, base_url, model_name, request_timeout=120, max_retries=5, initial_backoff_seconds=2, proxy_url=None, proxy_username=None, proxy_password=None):
+        if proxy_url:
+            proxy_auth = ""
+            if proxy_username and proxy_password:
+                proxy_auth = f"{proxy_username}:{proxy_password}@"
+
+            # The proxy URL itself needs a scheme for httpx if it's a direct URL string in the map
+            if "://" not in proxy_url: # Add http if no scheme is present
+                full_proxy_url_for_value = f"http://{proxy_auth}{proxy_url}"
+            else:
+                # Ensure auth is correctly prepended if scheme exists
+                scheme, rest = proxy_url.split("://", 1)
+                full_proxy_url_for_value = f"{scheme}://{proxy_auth}{rest}"
+
+            # The proxy URL itself needs a scheme for httpx if it's a direct URL string in the map
+            if "://" not in proxy_url: # Add http if no scheme is present
+                full_proxy_url_for_value = f"http://{proxy_auth}{proxy_url}"
+            else:
+                # Ensure auth is correctly prepended if scheme exists
+                scheme, rest = proxy_url.split("://", 1)
+                full_proxy_url_for_value = f"{scheme}://{proxy_auth}{rest}"
+
+            # The proxy URL itself needs a scheme for httpx if it's a direct URL string in the map
+            if "://" not in proxy_url: # Add http if no scheme is present
+                full_proxy_url_for_value = f"http://{proxy_auth}{proxy_url}"
+            else:
+                # Ensure auth is correctly prepended if scheme exists
+                scheme, rest = proxy_url.split("://", 1)
+                full_proxy_url_for_value = f"{scheme}://{proxy_auth}{rest}"
+
+            # Use 'all://' for applying the proxy to all requests (both http and https)
+            proxies_dict = {"all://": full_proxy_url_for_value}
+
+            self.client = OpenAI(
+                api_key=api_key,
+                base_url=base_url,
+                http_client=httpx.Client(proxies=proxies_dict)
+            )
+        else:
+            self.client = OpenAI(api_key=api_key, base_url=base_url)
+
         self.model_name = model_name
         self.request_timeout = request_timeout
         self.max_retries = max_retries
@@ -153,7 +193,10 @@ def get_model_adapter(config):
             model_name=config.get("model_name"),
             request_timeout=config.get("request_timeout", 120),
             max_retries=config.get("max_retries", 5),
-            initial_backoff_seconds=config.get("initial_backoff_seconds", 2)
+            initial_backoff_seconds=config.get("initial_backoff_seconds", 2),
+            proxy_url=config.get("proxy_url"),
+            proxy_username=config.get("proxy_username"),
+            proxy_password=config.get("proxy_password")
         )
     elif model_type == "ollama":
         return OllamaAdapter(
