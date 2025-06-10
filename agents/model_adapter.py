@@ -14,47 +14,63 @@ class BaseModelAdapter(ABC):
 
 class OpenAIAdapter(BaseModelAdapter):
     def __init__(self, api_key, base_url, model_name, request_timeout=120, max_retries=5, initial_backoff_seconds=2, proxy_url=None, proxy_username=None, proxy_password=None):
-        if proxy_url:
-            proxy_auth = ""
-            if proxy_username and proxy_password:
-                proxy_auth = f"{proxy_username}:{proxy_password}@"
-
-            # The proxy URL itself needs a scheme for httpx if it's a direct URL string in the map
-            if "://" not in proxy_url: # Add http if no scheme is present
-                full_proxy_url_for_value = f"http://{proxy_auth}{proxy_url}"
-            else:
-                # Ensure auth is correctly prepended if scheme exists
-                scheme, rest = proxy_url.split("://", 1)
-                full_proxy_url_for_value = f"{scheme}://{proxy_auth}{rest}"
-
-            # The proxy URL itself needs a scheme for httpx if it's a direct URL string in the map
-            if "://" not in proxy_url: # Add http if no scheme is present
-                full_proxy_url_for_value = f"http://{proxy_auth}{proxy_url}"
-            else:
-                # Ensure auth is correctly prepended if scheme exists
-                scheme, rest = proxy_url.split("://", 1)
-                full_proxy_url_for_value = f"{scheme}://{proxy_auth}{rest}"
-
-            # The proxy URL itself needs a scheme for httpx if it's a direct URL string in the map
-            if "://" not in proxy_url: # Add http if no scheme is present
-                full_proxy_url_for_value = f"http://{proxy_auth}{proxy_url}"
-            else:
-                # Ensure auth is correctly prepended if scheme exists
-                scheme, rest = proxy_url.split("://", 1)
-                full_proxy_url_for_value = f"{scheme}://{proxy_auth}{rest}"
-
-            # Use 'all://' for applying the proxy to all requests (both http and https)
-            proxies_dict = {"all://": full_proxy_url_for_value}
-
-            self.client = OpenAI(
-                api_key=api_key,
-                base_url=base_url,
-                http_client=httpx.Client(proxies=proxies_dict)
-            )
-        else:
-            self.client = OpenAI(api_key=api_key, base_url=base_url)
-
         self.model_name = model_name
+        self.request_timeout = request_timeout
+        self.max_retries = max_retries
+        self.initial_backoff_seconds = initial_backoff_seconds
+
+        if proxy_url:
+            original_http_proxy = os.environ.get('HTTP_PROXY')
+            original_https_proxy = os.environ.get('HTTPS_PROXY')
+
+            proxy_auth_str = ""
+            # Check if proxy_url already contains user:pass
+            if "@" in proxy_url and "://" in proxy_url:
+                scheme, rest_of_url = proxy_url.split("://", 1)
+                if "@" in rest_of_url: # user:pass@host:port
+                    # Use proxy_url as is, username/password params are ignored if already in URL
+                    pass # full_proxy_url will be constructed later using original proxy_url
+            elif proxy_username: # Construct auth string if username is provided
+                proxy_auth_str = proxy_username
+                if proxy_password:
+                    proxy_auth_str += f":{proxy_password}"
+                proxy_auth_str += "@"
+
+            # Add scheme if not present, and prepend auth string if constructed
+            if "://" in proxy_url:
+                scheme, host_port = proxy_url.split("://", 1)
+                # If auth was constructed, insert it. If proxy_url already had auth, proxy_auth_str is empty.
+                full_proxy_url = f"{scheme}://{proxy_auth_str}{host_port}"
+            else: # No scheme in proxy_url, assume http and prepend auth
+                full_proxy_url = f"http://{proxy_auth_str}{proxy_url}"
+
+            try:
+                os.environ['HTTP_PROXY'] = full_proxy_url
+                os.environ['HTTPS_PROXY'] = full_proxy_url
+
+                # httpx.Client() will pick up proxy settings from env vars
+                # Pass a new httpx_client to OpenAI so it picks up the env vars at its initialization time
+                httpx_client = httpx.Client()
+                self.client = OpenAI(
+                    api_key=api_key,
+                    base_url=base_url,
+                    http_client=httpx_client
+                )
+            finally:
+                # Restore original environment variables
+                if original_http_proxy is None:
+                    os.environ.pop('HTTP_PROXY', None)
+                else:
+                    os.environ['HTTP_PROXY'] = original_http_proxy
+
+                if original_https_proxy is None:
+                    os.environ.pop('HTTPS_PROXY', None)
+                else:
+                    os.environ['HTTPS_PROXY'] = original_https_proxy
+        else:
+            # If no proxy_url, initialize OpenAI client without custom http_client
+            # It will use its own default httpx.Client()
+            self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.request_timeout = request_timeout
         self.max_retries = max_retries
         self.initial_backoff_seconds = initial_backoff_seconds
