@@ -135,11 +135,17 @@ class ResearchAgent:
         return self.model_adapter.get_response(messages, **kwargs_for_model)
 
     def conduct_research(self, patent_text, research_prompt):
-        self.research_materials["original_text"] = patent_text
+        self.research_materials["original_text"] = patent_text # Store full original text
     
+        # Truncate patent_text for the prompt if it's too long
+        prompt_patent_text = patent_text
+        max_len = 15000
+        if len(prompt_patent_text) > max_len:
+            prompt_patent_text = prompt_patent_text[:max_len] + "\n... (truncated due to length)"
+
         messages = [
             {"role": "system", "content": research_prompt},
-            {"role": "user", "content": patent_text}
+            {"role": "user", "content": prompt_patent_text} # Use truncated text for prompt
         ]
     
         max_rounds = 5

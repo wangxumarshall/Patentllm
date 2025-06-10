@@ -40,10 +40,14 @@ class EvaluationAgent:
 
     def generate_evaluation_prompt(self, research_materials):
         """构建评估用对话上下文"""
-        target_patent = research_materials['original_text']
+        target_patent_text = research_materials['original_text']
+        max_len = 15000
+        if len(target_patent_text) > max_len:
+            target_patent_text = target_patent_text[:max_len] + "\n... (truncated due to length)"
+
         clues = [f"线索{i + 1}: {clue['result']}" for i, clue in enumerate(research_materials['search_results'])]
         return f"""目标专利内容：
-{target_patent}
+{target_patent_text}
 
 待评估侵权线索：
 {chr(10).join(clues)}"""

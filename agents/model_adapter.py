@@ -11,9 +11,10 @@ class BaseModelAdapter(ABC):
         pass
 
 class OpenAIAdapter(BaseModelAdapter):
-    def __init__(self, api_key, base_url, model_name="deepseek-chat"):
+    def __init__(self, api_key, base_url, model_name="deepseek-chat", request_timeout=60):
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.model_name = model_name
+        self.request_timeout = request_timeout
 
     def get_response(self, messages, **kwargs):
         try:
@@ -26,7 +27,7 @@ class OpenAIAdapter(BaseModelAdapter):
             if 'model' not in params:
                 params['model'] = self.model_name
             
-            completion = self.client.chat.completions.create(**params)
+            completion = self.client.chat.completions.create(**params, timeout=self.request_timeout)
             return completion
         except APIConnectionError as e:
             print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error.")
@@ -49,14 +50,10 @@ class OpenAIAdapter(BaseModelAdapter):
             # Ensure detailed attributes are printed if available.
             # The existing print(f"  Error Type: {type(e).__name__}") is redundant if the line above is changed, so it can be removed or commented.
             # Let's remove it to avoid redundancy.
-
-            if hasattr(e, 'message') and e.message is not None: # Check for None explicitly
-                print(f"  Error Message: to long")
-                #print(f"  Error Message: {e.message}")
-            else:
-                print(f"  Error Message: Not available") # Indicate if not available
             
             print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
+
+            print(f"  Error Message: {e.message if hasattr(e, 'message') and e.message is not None else 'Not available'}")
             
             if hasattr(e, 'status_code') and e.status_code is not None:
                 print(f"  Status Code: {e.status_code}")
@@ -136,7 +133,8 @@ def get_model_adapter(config):
         return OpenAIAdapter(
             api_key=config.get("api_key"),
             base_url=config.get("base_url"),
-            model_name=config.get("model_name", "deepseek-chat")
+            model_name=config.get("model_name", "deepseek-chat"),
+            request_timeout=config.get("request_timeout", 60)
         )
     elif model_type == "ollama":
         return OllamaAdapter(
