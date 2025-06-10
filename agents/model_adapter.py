@@ -53,7 +53,7 @@ class OpenAIAdapter(BaseModelAdapter):
             
             print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
 
-            print(f"  Error Message: {e.message if hasattr(e, 'message') and e.message is not None else 'Not available'}")
+            #print(f"  Error Message: {e.message if hasattr(e, 'message') and e.message is not None else 'Not available'}")
             
             if hasattr(e, 'status_code') and e.status_code is not None:
                 print(f"  Status Code: {e.status_code}")
