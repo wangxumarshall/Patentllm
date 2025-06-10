@@ -112,6 +112,18 @@ class ResearchAgent:
             return "暂时无法获取SerpAPI搜索结果"
 
     def get_response(self, messages):
+        # try:
+        #     completion = self.client.chat.completions.create(
+        #         model="deepseek-chat", # 这个模型名也应该来自配置
+        #         messages=messages,
+        #         tools=tools, # tools 可能需要根据模型能力调整
+        #         tool_choice="auto"
+        #     )
+        #     return completion
+        # except Exception as e:
+        #     print(f"API调用失败: {str(e)}")
+        #     return None
+
         # 注意：Ollama模型可能不支持OpenAI的tools格式，如果使用Ollama且需要工具调用，
         # OllamaAdapter中的get_response需要特殊处理工具调用逻辑，或者禁用工具调用。
         # 这里假设ResearchAgent的get_response总是需要tools，如果Ollama不支持，需要调整。
@@ -195,4 +207,3 @@ class ResearchAgent:
                 result['is_target_company'] = False
         
         return self.research_materials
-    
