@@ -26,13 +26,12 @@ class OpenAIAdapter(BaseModelAdapter):
             try:
                 # Prepare parameters for the API call
                 # Prioritize model from kwargs if provided, otherwise use self.model_name
-            params = {
-                "messages": messages,
-                **kwargs
-            }
-            if 'model' not in params:
-                params['model'] = self.model_name
-            
+                params = {
+                    "messages": messages,
+                    **kwargs
+                }
+                if 'model' not in params:
+                    params['model'] = self.model_name
                 completion = self.client.chat.completions.create(**params, timeout=self.request_timeout)
                 return completion
             except APIConnectionError as e:
