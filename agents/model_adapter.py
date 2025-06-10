@@ -26,22 +26,22 @@ class OpenAIAdapter(BaseModelAdapter):
             try:
                 # Prepare parameters for the API call
                 # Prioritize model from kwargs if provided, otherwise use self.model_name
-            params = {
-                "messages": messages,
-                **kwargs
-            }
-            if 'model' not in params:
-                params['model'] = self.model_name
-            
+                params = {
+                    "messages": messages,
+                    **kwargs
+                }
+                if 'model' not in params:
+                    params['model'] = self.model_name
+
                 completion = self.client.chat.completions.create(**params, timeout=self.request_timeout)
                 return completion
             except APIConnectionError as e:
                 print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error.")
                 traceback.print_exc()
-            http_proxy = os.getenv('HTTP_PROXY')
-            https_proxy = os.getenv('HTTPS_PROXY')
-            print(f"Proxy Information: HTTP_PROXY='{http_proxy}' HTTPS_PROXY='{https_proxy}'")
-            return None
+                http_proxy = os.getenv('HTTP_PROXY')
+                https_proxy = os.getenv('HTTPS_PROXY')
+                print(f"Proxy Information: HTTP_PROXY='{http_proxy}' HTTPS_PROXY='{https_proxy}'")
+                return None
         except RateLimitError as e:
             print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error. ")
             traceback.print_exc()

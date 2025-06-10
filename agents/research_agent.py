@@ -123,7 +123,7 @@ class ResearchAgent:
         # except Exception as e:
         #     print(f"API调用失败: {str(e)}")
         #     return None
-        
+
         # 注意：Ollama模型可能不支持OpenAI的tools格式，如果使用Ollama且需要工具调用，
         # OllamaAdapter中的get_response需要特殊处理工具调用逻辑，或者禁用工具调用。
         # 这里假设ResearchAgent的get_response总是需要tools，如果Ollama不支持，需要调整。
@@ -207,4 +207,3 @@ class ResearchAgent:
                 result['is_target_company'] = False
         
         return self.research_materials
-    
