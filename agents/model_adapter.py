@@ -4,6 +4,7 @@ import requests
 import json
 import traceback
 import os
+import time
 
 class BaseModelAdapter(ABC):
     @abstractmethod
@@ -11,15 +12,20 @@ class BaseModelAdapter(ABC):
         pass
 
 class OpenAIAdapter(BaseModelAdapter):
-    def __init__(self, api_key, base_url, model_name="deepseek-chat", request_timeout=60):
+    def __init__(self, api_key, base_url, model_name="deepseek-chat", request_timeout=60, max_retries=3, initial_backoff_seconds=1):
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.model_name = model_name
         self.request_timeout = request_timeout
+        self.max_retries = max_retries
+        self.initial_backoff_seconds = initial_backoff_seconds
 
     def get_response(self, messages, **kwargs):
-        try:
-            # Prepare parameters for the API call
-            # Prioritize model from kwargs if provided, otherwise use self.model_name
+        retries = 0
+        backoff_seconds = self.initial_backoff_seconds
+        while retries <= self.max_retries:
+            try:
+                # Prepare parameters for the API call
+                # Prioritize model from kwargs if provided, otherwise use self.model_name
             params = {
                 "messages": messages,
                 **kwargs
@@ -27,11 +33,11 @@ class OpenAIAdapter(BaseModelAdapter):
             if 'model' not in params:
                 params['model'] = self.model_name
             
-            completion = self.client.chat.completions.create(**params, timeout=self.request_timeout)
-            return completion
-        except APIConnectionError as e:
-            print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error.")
-            traceback.print_exc()
+                completion = self.client.chat.completions.create(**params, timeout=self.request_timeout)
+                return completion
+            except APIConnectionError as e:
+                print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error.")
+                traceback.print_exc()
             http_proxy = os.getenv('HTTP_PROXY')
             https_proxy = os.getenv('HTTPS_PROXY')
             print(f"Proxy Information: HTTP_PROXY='{http_proxy}' HTTPS_PROXY='{https_proxy}'")
@@ -45,15 +51,20 @@ class OpenAIAdapter(BaseModelAdapter):
             traceback.print_exc()
             return None
         except APIError as e: # Catch other OpenAI API errors
-            # Modified initial print line to avoid str(e) directly and be more specific about the error type.
+            if hasattr(e, 'status_code') and 500 <= e.status_code <= 599:
+                if retries < self.max_retries:
+                    print(f"OpenAI API 5xx error (Status: {e.status_code}). Retrying in {backoff_seconds}s... (Attempt {retries + 1}/{self.max_retries})")
+                    time.sleep(backoff_seconds)
+                    backoff_seconds *= 2
+                    retries += 1
+                    continue
+                else:
+                    print(f"OpenAI API call failed after {self.max_retries} retries for a 5xx error (Status: {e.status_code}).")
+                    traceback.print_exc()
+                    return None
             
-            # Ensure detailed attributes are printed if available.
-            # The existing print(f"  Error Type: {type(e).__name__}") is redundant if the line above is changed, so it can be removed or commented.
-            # Let's remove it to avoid redundancy.
-            
+            # Handle non-5xx APIErrors or if retries exhausted for 5xx
             print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
-
-            #print(f"  Error Message: {e.message if hasattr(e, 'message') and e.message is not None else 'Not available'}")
             
             if hasattr(e, 'status_code') and e.status_code is not None:
                 print(f"  Status Code: {e.status_code}")
@@ -78,6 +89,12 @@ class OpenAIAdapter(BaseModelAdapter):
             print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error.")
             traceback.print_exc()
             return None
+
+        # If loop finishes, all retries failed for 5xx errors
+        if retries > self.max_retries: # Should be retries == self.max_retries + 1 if loop exited due to retries
+            print(f"OpenAI API call failed after {self.max_retries} retries for a 5xx error.")
+        return None
+
 
 class OllamaAdapter(BaseModelAdapter):
     def __init__(self, base_url="http://localhost:11434", model_name="qwen2:7b"):
@@ -134,7 +151,9 @@ def get_model_adapter(config):
             api_key=config.get("api_key"),
             base_url=config.get("base_url"),
             model_name=config.get("model_name", "deepseek-chat"),
-            request_timeout=config.get("request_timeout", 60)
+            request_timeout=config.get("request_timeout", 60),
+            max_retries=config.get("max_retries", 3),
+            initial_backoff_seconds=config.get("initial_backoff_seconds", 1)
         )
     elif model_type == "ollama":
         return OllamaAdapter(
