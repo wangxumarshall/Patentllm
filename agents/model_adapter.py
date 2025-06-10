@@ -12,7 +12,7 @@ class BaseModelAdapter(ABC):
         pass
 
 class OpenAIAdapter(BaseModelAdapter):
-    def __init__(self, api_key, base_url, model_name="deepseek-chat", request_timeout=60, max_retries=3, initial_backoff_seconds=1):
+    def __init__(self, api_key, base_url, model_name="deepseek-chat", request_timeout=120, max_retries=5, initial_backoff_seconds=2):
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.model_name = model_name
         self.request_timeout = request_timeout
@@ -151,9 +151,9 @@ def get_model_adapter(config):
             api_key=config.get("api_key"),
             base_url=config.get("base_url"),
             model_name=config.get("model_name", "deepseek-chat"),
-            request_timeout=config.get("request_timeout", 60),
-            max_retries=config.get("max_retries", 3),
-            initial_backoff_seconds=config.get("initial_backoff_seconds", 1)
+            request_timeout=config.get("request_timeout", 120),
+            max_retries=config.get("max_retries", 5),
+            initial_backoff_seconds=config.get("initial_backoff_seconds", 2)
         )
     elif model_type == "ollama":
         return OllamaAdapter(

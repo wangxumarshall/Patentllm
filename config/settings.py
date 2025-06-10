@@ -24,7 +24,10 @@ ACTIVE_MODEL_CONFIG = {
         "api_key": "sk-1234",  # 将这里替换为您的真实 OpenAI API Key
         #"base_url": os.getenv('OPENAI_BASE_URL', 'https://api.deepseek.com/'),
         "base_url": os.getenv('OPENAI_BASE_URL', 'http://api.openai.rnd.huawei.com'),
-        "default_model": "qwq-32b-128k"
+        "default_model": "qwq-32b-128k",
+        "request_timeout": 120,
+        "max_retries": 5,
+        "initial_backoff_seconds": 2
     },
     "ollama": {
         "base_url": os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434'),
@@ -39,4 +42,9 @@ MODEL_CONFIG = {
     "base_url": ACTIVE_MODEL_CONFIG.get(ACTIVE_MODEL_CONFIG["type"], {}).get("base_url"),
     "model_name": ACTIVE_MODEL_CONFIG.get(ACTIVE_MODEL_CONFIG["type"], {}).get("default_model")
 }
+
+if MODEL_CONFIG["type"] == "openai":
+    MODEL_CONFIG["request_timeout"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("request_timeout")
+    MODEL_CONFIG["max_retries"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("max_retries")
+    MODEL_CONFIG["initial_backoff_seconds"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("initial_backoff_seconds")
     
