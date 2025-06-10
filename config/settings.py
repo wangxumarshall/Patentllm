@@ -27,7 +27,10 @@ ACTIVE_MODEL_CONFIG = {
         "default_model": "qwq-32b-128k",
         "request_timeout": 120,
         "max_retries": 5,
-        "initial_backoff_seconds": 2
+        "initial_backoff_seconds": 2,
+        "proxy_url": os.getenv('OPENAI_PROXY_URL', None),
+        "proxy_username": os.getenv('OPENAI_PROXY_USERNAME', None),
+        "proxy_password": os.getenv('OPENAI_PROXY_PASSWORD', None)
     },
     "ollama": {
         "base_url": os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434'),
@@ -47,4 +50,6 @@ if MODEL_CONFIG["type"] == "openai":
     MODEL_CONFIG["request_timeout"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("request_timeout")
     MODEL_CONFIG["max_retries"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("max_retries")
     MODEL_CONFIG["initial_backoff_seconds"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("initial_backoff_seconds")
-    
+    MODEL_CONFIG["proxy_url"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("proxy_url")
+    MODEL_CONFIG["proxy_username"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("proxy_username")
+    MODEL_CONFIG["proxy_password"] = ACTIVE_MODEL_CONFIG.get("openai", {}).get("proxy_password")
