@@ -42,53 +42,53 @@ class OpenAIAdapter(BaseModelAdapter):
                 https_proxy = os.getenv('HTTPS_PROXY')
                 print(f"Proxy Information: HTTP_PROXY='{http_proxy}' HTTPS_PROXY='{https_proxy}'")
                 return None
-        except RateLimitError as e:
-            print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error. ")
-            traceback.print_exc()
-            return None
-        except AuthenticationError as e:
-            print(f"OpenAI API AuthenticationError: Authentication failed for {self.client.base_url}. Error. ")
-            traceback.print_exc()
-            return None
-        except APIError as e: # Catch other OpenAI API errors
-            if hasattr(e, 'status_code') and 500 <= e.status_code <= 599:
-                if retries < self.max_retries:
-                    print(f"OpenAI API 5xx error (Status: {e.status_code}). Retrying in {backoff_seconds}s... (Attempt {retries + 1}/{self.max_retries})")
-                    time.sleep(backoff_seconds)
-                    backoff_seconds *= 2
-                    retries += 1
-                    continue
+            except RateLimitError as e:
+                print(f"OpenAI API RateLimitError: Rate limit exceeded for {self.client.base_url}. Error. ")
+                traceback.print_exc()
+                return None
+            except AuthenticationError as e:
+                print(f"OpenAI API AuthenticationError: Authentication failed for {self.client.base_url}. Error. ")
+                traceback.print_exc()
+                return None
+            except APIError as e: # Catch other OpenAI API errors
+                if hasattr(e, 'status_code') and 500 <= e.status_code <= 599:
+                    if retries < self.max_retries:
+                        print(f"OpenAI API 5xx error (Status: {e.status_code}). Retrying in {backoff_seconds}s... (Attempt {retries + 1}/{self.max_retries})")
+                        time.sleep(backoff_seconds)
+                        backoff_seconds *= 2
+                        retries += 1
+                        continue
+                    else:
+                        print(f"OpenAI API call failed after {self.max_retries} retries for a 5xx error (Status: {e.status_code}).")
+                        traceback.print_exc()
+                        return None
+
+                # Handle non-5xx APIErrors or if retries exhausted for 5xx
+                print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
+
+                if hasattr(e, 'status_code') and e.status_code is not None:
+                    print(f"  Status Code: {e.status_code}")
                 else:
-                    print(f"OpenAI API call failed after {self.max_retries} retries for a 5xx error (Status: {e.status_code}).")
-                    traceback.print_exc()
-                    return None
-            
-            # Handle non-5xx APIErrors or if retries exhausted for 5xx
-            print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
-            
-            if hasattr(e, 'status_code') and e.status_code is not None:
-                print(f"  Status Code: {e.status_code}")
-            else:
-                print(f"  Status Code: Not available")
+                    print(f"  Status Code: Not available")
 
-            if hasattr(e, 'code') and e.code is not None:
-                 print(f"  Error Code: {e.code}")
-            else:
-                print(f"  Error Code: Not available")
+                if hasattr(e, 'code') and e.code is not None:
+                     print(f"  Error Code: {e.code}")
+                else:
+                    print(f"  Error Code: Not available")
 
-            if hasattr(e, 'body') and e.body is not None:
-                body_info = f"type: {type(e.body).__name__}, length: {len(str(e.body))}"
-                print(f"  Error Body Info: {body_info}. Content omitted for brevity. Enable debug for full body.")
-            else:
-                print(f"  Error Body Info: Not available or empty.")
+                if hasattr(e, 'body') and e.body is not None:
+                    body_info = f"type: {type(e.body).__name__}, length: {len(str(e.body))}"
+                    print(f"  Error Body Info: {body_info}. Content omitted for brevity. Enable debug for full body.")
+                else:
+                    print(f"  Error Body Info: Not available or empty.")
 
-            print("  Traceback:")
-            traceback.print_exc()
-            return None
-        except Exception as e:
-            print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error.")
-            traceback.print_exc()
-            return None
+                print("  Traceback:")
+                traceback.print_exc()
+                return None
+            except Exception as e:
+                print(f"OpenAI API call failed (unexpected error): Could not process request for {self.client.base_url}. Error.")
+                traceback.print_exc()
+                return None
 
         # If loop finishes, all retries failed for 5xx errors
         if retries > self.max_retries: # Should be retries == self.max_retries + 1 if loop exited due to retries
