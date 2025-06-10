@@ -14,6 +14,8 @@ class BaseModelAdapter(ABC):
 
 class OpenAIAdapter(BaseModelAdapter):
     def __init__(self, api_key, base_url, model_name, request_timeout=120, max_retries=5, initial_backoff_seconds=2, proxy_url=None, proxy_username=None, proxy_password=None):
+        print(f"[OpenAIAdapter __init__] Initializing with base_url: {base_url}")
+        print(f"[OpenAIAdapter __init__] Initial request_timeout: {request_timeout}, max_retries: {max_retries}")
         self.model_name = model_name
         self.request_timeout = request_timeout
         self.max_retries = max_retries
@@ -23,30 +25,37 @@ class OpenAIAdapter(BaseModelAdapter):
             original_http_proxy = os.environ.get('HTTP_PROXY')
             original_https_proxy = os.environ.get('HTTPS_PROXY')
 
-            proxy_auth_str = ""
-            # Check if proxy_url already contains user:pass
-            if "@" in proxy_url and "://" in proxy_url:
-                scheme, rest_of_url = proxy_url.split("://", 1)
-                if "@" in rest_of_url: # user:pass@host:port
-                    # Use proxy_url as is, username/password params are ignored if already in URL
-                    pass # full_proxy_url will be constructed later using original proxy_url
-            elif proxy_username: # Construct auth string if username is provided
-                proxy_auth_str = proxy_username
-                if proxy_password:
-                    proxy_auth_str += f":{proxy_password}"
-                proxy_auth_str += "@"
+            # Refined logic for full_proxy_url construction:
+            temp_proxy_url = proxy_url # Work with a temporary variable
 
-            # Add scheme if not present, and prepend auth string if constructed
-            if "://" in proxy_url:
-                scheme, host_port = proxy_url.split("://", 1)
-                # If auth was constructed, insert it. If proxy_url already had auth, proxy_auth_str is empty.
-                full_proxy_url = f"{scheme}://{proxy_auth_str}{host_port}"
-            else: # No scheme in proxy_url, assume http and prepend auth
-                full_proxy_url = f"http://{proxy_auth_str}{proxy_url}"
+            # Separate scheme from the host/auth part
+            scheme = "http" # Default scheme
+            host_auth_part = temp_proxy_url
+
+            if "://" in temp_proxy_url:
+                scheme, host_auth_part = temp_proxy_url.split("://", 1)
+
+            # Check if host_auth_part (e.g., user:pass@host:port or host:port) already contains credentials
+            if "@" in host_auth_part:
+                # Credentials are in the URL, use it as is with its original scheme (or default if none was stripped)
+                full_proxy_url = f"{scheme}://{host_auth_part}"
+            elif proxy_username:
+                # Credentials provided as parameters, prepend them to the host_auth_part
+                auth_string = proxy_username
+                if proxy_password:
+                    auth_string += f":{proxy_password}"
+                full_proxy_url = f"{scheme}://{auth_string}@{host_auth_part}"
+            else:
+                # No credentials in URL and no credentials in parameters
+                full_proxy_url = f"{scheme}://{host_auth_part}"
 
             try:
                 os.environ['HTTP_PROXY'] = full_proxy_url
                 os.environ['HTTPS_PROXY'] = full_proxy_url
+
+                print(f"[OpenAIAdapter __init__] Attempting to use proxy: {full_proxy_url}")
+                print(f"[OpenAIAdapter __init__] HTTP_PROXY before httpx.Client(): {os.environ.get('HTTP_PROXY')}")
+                print(f"[OpenAIAdapter __init__] HTTPS_PROXY before httpx.Client(): {os.environ.get('HTTPS_PROXY')}")
 
                 # httpx.Client() will pick up proxy settings from env vars
                 # Pass a new httpx_client to OpenAI so it picks up the env vars at its initialization time
@@ -56,6 +65,7 @@ class OpenAIAdapter(BaseModelAdapter):
                     base_url=base_url,
                     http_client=httpx_client
                 )
+                print(f"[OpenAIAdapter __init__] OpenAI client configured with custom httpx.Client for proxy.")
             finally:
                 # Restore original environment variables
                 if original_http_proxy is None:
@@ -73,26 +83,108 @@ class OpenAIAdapter(BaseModelAdapter):
             # If no proxy_url, initialize OpenAI client without custom http_client
             # It will use its own default httpx.Client()
             self.client = OpenAI(api_key=api_key, base_url=base_url)
-        self.request_timeout = request_timeout
-        self.max_retries = max_retries
-        self.initial_backoff_seconds = initial_backoff_seconds
+            print(f"[OpenAIAdapter __init__] OpenAI client configured without custom proxy httpx.Client.")
 
     def get_response(self, messages, **kwargs):
         retries = 0
         backoff_seconds = self.initial_backoff_seconds
+
+        # Prepare parameters for the API call (moved here to be available for initial print)
+        # Prioritize model from kwargs if provided, otherwise use self.model_name
+        params = {
+            "messages": messages,
+            **kwargs
+        }
+        if 'model' not in params:
+            params['model'] = self.model_name
+
+        params['stream'] = True # Enable streaming
+
+        print(f"[OpenAIAdapter get_response] Using OpenAI client with base_url: {self.client.base_url}")
+        # Attempt to convert params to string for logging, handling potential circular references or complex objects if any.
+        try:
+            params_str = str(params)
+        except Exception:
+            params_str = "Could not convert params to string for logging."
+        print(f"[OpenAIAdapter get_response] Attempting to send request with parameters: {params_str}")
+
         while retries <= self.max_retries:
             try:
-                # Prepare parameters for the API call
-                # Prioritize model from kwargs if provided, otherwise use self.model_name
-                params = {
-                    "messages": messages,
-                    **kwargs
-                }
-                if 'model' not in params:
-                    params['model'] = self.model_name
+                completion_stream = self.client.chat.completions.create(**params, timeout=self.request_timeout)
 
-                completion = self.client.chat.completions.create(**params, timeout=self.request_timeout)
-                return completion
+                print("[OpenAIAdapter get_response] Request was sent with stream=True. Processing stream...")
+                collected_content = []
+                last_chunk = None # To store the last chunk for model/id if needed
+
+                try:
+                    for chunk in completion_stream:
+                        print(f"[OpenAIAdapter get_response] Received stream chunk: {chunk.model_dump_json(indent=2)}")
+                        last_chunk = chunk # Keep track of the last chunk
+                        if chunk.choices:
+                            choice = chunk.choices[0]
+                            if choice.delta and choice.delta.content is not None:
+                                collected_content.append(choice.delta.content)
+                            if choice.finish_reason is not None:
+                                print(f"[OpenAIAdapter get_response] Stream finished with reason: {choice.finish_reason}")
+
+                    full_response_content = "".join(collected_content)
+                    print(f"[OpenAIAdapter get_response] Collected full content from stream: {full_response_content}")
+
+                    class MockMessage:
+                        def __init__(self, content):
+                            self.content = content
+                            self.tool_calls = None
+
+                    class MockChoice:
+                        def __init__(self, content):
+                            self.message = MockMessage(content)
+                            self.finish_reason = "stop"
+
+                    class MockCompletion:
+                        def __init__(self, content, model_name_from_stream=None, response_id=None):
+                            self.choices = [MockChoice(content)]
+                            self.model = model_name_from_stream if model_name_from_stream else params.get('model')
+                            self.id = response_id if response_id else "streamed_response"
+                            # Initialize other common attributes to None or default values
+                            self.created = int(time.time()) # Unix timestamp
+                            self.object = "chat.completion" # Default object type for chat completions
+                            self.system_fingerprint = None
+                            self.usage = None # Usage info is not typically available directly from stream in this manner
+
+                    model_name_to_use = None
+                    response_id_to_use = None
+                    if last_chunk: # Safely access attributes from the last chunk
+                        if hasattr(last_chunk, 'model') and last_chunk.model:
+                            model_name_to_use = last_chunk.model
+                        if hasattr(last_chunk, 'id') and last_chunk.id:
+                            response_id_to_use = last_chunk.id
+
+                    final_completion_response = MockCompletion(full_response_content, model_name_to_use, response_id_to_use)
+                    return final_completion_response
+
+                except Exception as e:
+                    print(f"[OpenAIAdapter get_response] Error while processing stream: {type(e).__name__} - {str(e)}")
+                    traceback.print_exc()
+                    return None
+
+            except httpx.TimeoutException as e:
+                print(f"OpenAI API Call failed due to httpx.TimeoutException: {type(e).__name__} - {str(e)}")
+                print(f"URL that was requested: {e.request.url if e.request else 'N/A'}")
+                traceback.print_exc()
+                # For timeout, retrying might be applicable depending on strategy, here we just return None after retries exhausted
+                # Fall through to retry logic if desired, or handle specifically. For now, let it be caught by retry logic for 5xx.
+                # If we want to retry httpx.TimeoutException specifically, need to adjust retry logic or add a specific retry counter here.
+                # For this change, we are just logging and then it will be handled by the generic retry for 5xx or fail.
+                # A more robust solution might involve specific retry conditions for timeouts.
+                # For now, let's print and let the existing retry logic (if any applicable) or failure occur.
+                # The current retry logic is for APIError 5xx, so this will likely fall through to the generic Exception or fail immediately.
+                # Let's make it return None for now, consistent with other specific error handlers.
+                return None
+            except httpx.RequestError as e:
+                print(f"OpenAI API Call failed due to httpx.RequestError: {type(e).__name__} - {str(e)}")
+                print(f"URL that was requested: {e.request.url if e.request else 'N/A'}")
+                traceback.print_exc()
+                return None
             except APIConnectionError as e:
                 print(f"OpenAI API ConnectionError: Failed to connect to OpenAI at {self.client.base_url}. Error.")
                 traceback.print_exc()
