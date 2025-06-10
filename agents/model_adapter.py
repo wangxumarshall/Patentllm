@@ -51,7 +51,7 @@ class OpenAIAdapter(BaseModelAdapter):
             # Let's remove it to avoid redundancy.
 
             if hasattr(e, 'message') and e.message is not None: # Check for None explicitly
-                print(f"  Error Message: {to long}")
+                print(f"  Error Message: to long")
                 #print(f"  Error Message: {e.message}")
             else:
                 print(f"  Error Message: Not available") # Indicate if not available
