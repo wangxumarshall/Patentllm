@@ -45,17 +45,19 @@ class OpenAIAdapter(BaseModelAdapter):
             return None
         except APIError as e: # Catch other OpenAI API errors
             # Modified initial print line to avoid str(e) directly and be more specific about the error type.
-            print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
-
+            
             # Ensure detailed attributes are printed if available.
             # The existing print(f"  Error Type: {type(e).__name__}") is redundant if the line above is changed, so it can be removed or commented.
             # Let's remove it to avoid redundancy.
 
             if hasattr(e, 'message') and e.message is not None: # Check for None explicitly
-                print(f"  Error Message: {e.message}")
+                print(f"  Error Message: {to long}")
+                #print(f"  Error Message: {e.message}")
             else:
                 print(f"  Error Message: Not available") # Indicate if not available
-
+            
+            print(f"OpenAI APIError: Encountered API error of type '{type(e).__name__}' with {self.client.base_url}.")
+            
             if hasattr(e, 'status_code') and e.status_code is not None:
                 print(f"  Status Code: {e.status_code}")
             else:
