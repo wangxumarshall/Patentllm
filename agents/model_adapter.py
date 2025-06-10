@@ -67,6 +67,8 @@ class OpenAIAdapter(BaseModelAdapter):
                     os.environ.pop('HTTPS_PROXY', None)
                 else:
                     os.environ['HTTPS_PROXY'] = original_https_proxy
+            print(f"# original_http_proxy='{original_http_proxy}' original_https_proxy='{original_https_proxy}'")
+            print(f"# '{self}', '{api_key}', '{base_url}', '{model_name}', '{request_timeout}', '{max_retries}', '{initial_backoff_seconds}', '{proxy_url}', '{proxy_username}', '{proxy_password}'")
         else:
             # If no proxy_url, initialize OpenAI client without custom http_client
             # It will use its own default httpx.Client()
